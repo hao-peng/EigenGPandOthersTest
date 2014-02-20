@@ -9,3 +9,8 @@ testTS.m:
 test file for the time series data s&p500
 Each input data point is a D dimesion historical open price
 The prediction value is next open price.
+
+testSinc.m:
+test file for sinc data
+Each input data point is a D dimesion historcal targets
+The prediction value is next target.

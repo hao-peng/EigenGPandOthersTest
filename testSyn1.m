@@ -129,7 +129,6 @@ hold on
 plot(x,y,'.m', 'MarkerSize', 12)% data points in magenta
 plot(xs, ys, '-', 'Color', [0 .5 0]);
 plot(xs,mu,'b') % mean predictions in blue
-plot(xs,mu,'b') % mean predictions in blue
 plot(xs,mu+2*sqrt(s2),'r') % plus/minus 2 std deviation predictions in red
 plot(xs,mu-2*sqrt(s2),'r')
 % x-location of pseudo-inputs as black crosses
