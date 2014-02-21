@@ -4,7 +4,8 @@
 % covariance matrix is C_ij =
 % A_ij*(sigma_i)^0.25*(sigma_j)^0.25*((sigma_i+simga_j)/2)^-0.5*exp(-Q_ij);
 % Q_ij = (x_i-x_j)^2/((sigma_1-sigma_2)/2)
-% sigma_i 
+% A_ij = alpha*(x_i+x_j)/2+0.1
+% sigma_i = beta*x_i
 
 
 function testGP
@@ -107,6 +108,9 @@ nmse_compositeEigenGP(tid) = getNMSE(mu, ytest);
 plotResult(x, y, xtest, ytest, mu, s2, trained_model.B);
 filename = strcat('synGP/figs/synGP_CompositeEigenGP_M', int2str(M),  '_', int2str(tid),'.pdf');
 saveas(gcf, filename, 'pdf');
+plotCompositeEigenFunctions(trained_model, xtest);
+filename = strcat('synGP/figs/synGP_Eigen_CompositeEigenGP_M', int2str(M),  '_', int2str(tid),'.pdf');
+saveas(gcf, filename, 'pdf');
 end
 
 %% ARD update kerB
@@ -189,6 +193,57 @@ ylabel('y', 'fontsize', 20);
 set(gca, 'fontsize',20);
 set(gcf, 'PaperSize', [6.2 4.8]);
 set(gcf, 'PaperPositionMode', 'auto')
+end
+
+function plotCompositeEigenFunctions(model, xtest)
+sigma2 = exp(model.logSigma*2);
+eta = exp(model.logEta);
+a0 = exp(model.logA0);
+a1 = exp(model.logA1);
+a2 = exp(model.logA2);
+B = model.B;
+M = size(B, 1);
+% to avoid semi positive definite
+epsilon = 1e-10;
+% for later use
+B2 = B.*B;
+X2= xtest.*xtest;
+X_B = xtest*B';
+B_B = B*B';
+X_eta = bsxfun(@times,xtest,eta');
+B_eta = bsxfun(@times,B,eta');
+expF = exp(bsxfun(@minus,bsxfun(@minus,2*B_eta*B',B2*eta),(B2*eta)'));
+Kbb = a0*expF+a1*(B_B)+a2 + epsilon*eye(M);
+[Uq, Lambdaq] = eig(Kbb);
+[Lambda, sort_ind] = sort(abs(diag(Lambdaq)),'descend');
+U = real(Uq(:,sort_ind(1:M)));
+expH = exp(bsxfun(@minus,bsxfun(@minus,2*X_eta*B',X2*eta),(B2*eta)'));
+Ksb = a0*expH+a1*(X_B)+a2;
+Kerfun = Ksb * scale_cols(U, 1./Lambda);
+clf
+hold on 
+%plot(xtest, mu, '-.b');
+%plot(xtest, mu_full, '--r');
+plot(xtest, Kerfun(:,1), '-.', 'Color', [0.54118,0.18039,0.90196]);
+plot(xtest, Kerfun(:,2), '--', 'Color', [0.18039,0.90196,0.90196]);
+plot(xtest, Kerfun(:,3), '-', 'Color', [0,0.90196,0]);
+plot(xtest, Kerfun(:,4), '-', 'Color', [0.8,0.6,0.1]); %plot(xtest, Kerfun(:,5), '-', 'Color', [0.18039,0.90196,0.36078]);
+plot(xtest, Kerfun(:,5), '-', 'Color', [0.90196,0.18039,0.18039]);
+plot(B,-1.9*ones(size(B)),'k+','markersize',20);
+hold off
+axis([0 5 -2 2.5]);
+xlabel('x', 'fontsize', 20);
+ylabel('y', 'fontsize', 20);
+% lg = legend( 'predictive mean', ...
+%         '1st eigenfunction', ...
+%         '2nd eigenfunction', ...
+%         '3rd eigenfunction', ...
+%         '4th eigenfunction', ...
+%         '5th egienfunction');
+set(gca, 'fontsize',20);
+%set(lg, 'fontsize',15);
+set(gcf, 'PaperSize', [6.2 4.6]);
+set(gcf, 'PaperPositionMode', 'auto');
 end
 
 function nmse = getNMSE(mu, ys)
