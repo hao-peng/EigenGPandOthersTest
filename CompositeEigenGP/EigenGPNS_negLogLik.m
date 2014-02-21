@@ -25,7 +25,7 @@ a1 = exp(param(3+D));
 a2 = exp(param(4+D));
 B = reshape(param(5+D:D*M+D+4), M, D);
 % to avoid semi positive definite
-epsilon = 0;%1e-11;
+epsilon = 1e-10;
 % Some commonly used terms
 X2 = X.*X;
 B2 = B.*B;

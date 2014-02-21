@@ -14,3 +14,11 @@ testSinc.m:
 test file for sinc data
 Each input data point is a D dimesion historcal targets
 The prediction value is next target.
+
+testSincCF.m:
+test file for sinc data using curve fitting
+Each input data point is a the time
+The prediction value is target value at that time.
+
+testGP.m:
+test file for samples drawn from a non-stationary GP process.

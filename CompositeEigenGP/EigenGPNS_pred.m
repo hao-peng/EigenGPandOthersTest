@@ -13,7 +13,7 @@ a1 = exp(model.logA1);
 a2 = exp(model.logA2);
 B = model.B;
 % to avoid semi positive definite
-epsilon = 0;%1e-11;
+epsilon = 1e-10;
 % for later use
 X2 = X.*X;
 B2 = B.*B;
