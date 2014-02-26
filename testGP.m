@@ -21,9 +21,12 @@ set(gcf,'defaultlinelinewidth',1.5);
 
 mkdir('synGP/figs');
 GENERATE_DATA = true;
+global MAX_X;
+MAX_X = 5;
+%% number of pseudo-inputs
+M = 10;
 
 %% generate data
-if GENERATE_DATA
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 
@@ -36,8 +39,13 @@ alpha = 0.1;
 beta = 0.1;
 sigma = 0.1;
 
+numTest = 10;
+
+
+if GENERATE_DATA
+for tid = 1:numTest
 % generating
-all_x = rand(N+Ns, 1)*5;
+all_x = rand(N+Ns, 1)*MAX_X;
 
 C = zeros(N+Ns);
 for i = 1:N+Ns
@@ -57,49 +65,56 @@ y = all_y(1:N, 1) + normrnd(0, sigma, N, 1);
 ytest = all_y(N+1:end,1);
 ytest = ytest(iX);
 
-save('synGP/synGP.mat', 'x', 'y','xtest','ytest');
-else
-   load('synGP/synGP.mat');
-   [N D] = size(x);
+save(strcat('synGP/synGP_', int2str(tid),'.mat'), 'x', 'y','xtest','ytest');
 end
-
-numTest = 10;
-
-
-%% number of pseudo-inputs
-M = 10;
+end
 
 %% initialize hyperparameters 
-opt.cov(1:D) = -2*log((max(x)-min(x))'/2); % log 1/(lengthscales)^2
-opt.cov(D+1) = log(var(y,1)); % log size 
-opt.lik = log(var(y,1)/4); % log noise
-opt.nIter = 50;
-
-%% fullGP
-hyp1 = minimize(opt, @gp, 100, @infExact, [], {@covSEard}, @likGauss, x, y);
-[mu_full, s2_full] = gp(hyp1, @infExact, [], {@covSEard}, @likGauss, x, y, xtest);
-
-
-%% randommize initial values
-seed = 0;
-rand('seed',seed); randn('seed',seed);
-
 for tid = 1:numTest
-opts{tid} = opt;
-opts{tid}.cov = opt.cov.*rand(1,D+1);
-opts{tid}.logA1 = 0.1*rand();
-opts{tid}.logA2 = 0.1*rand();
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
+opts{tid}.cov(1:D,1) = -log((max(x)-min(x))'/2); % log 1/(lengthscales)^2
+opts{tid}.cov(D+1,1) = log(var(y,1))/2; % log size 
+opts{tid}.lik = log(var(y,1)/4)/2; % log noise
+opts{tid}.nIter = 50;
 end
+
+%% ARD fullGP
+for tid = 1:numTest
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
+hyp1 = minimize(opts{tid}, @gp, 100, @infExact, [], {@covSEard}, @likGauss, x, y);
+[mu, s2] = gp(hyp1, @infExact, [], {@covSEard}, @likGauss, x, y, xtest);
+nmse_ARDfullGP(tid) = getNMSE(mu, ytest);
+plotResult(x, y, xtest, ytest, mu, s2);
+filename = strcat('synGP/figs/synGP_ARDfullGP_M', int2str(M),  '_', int2str(tid),'.pdf');
+saveas(gcf, filename, 'pdf');
+end
+
+
+%% Composite fullGP
+for tid = 1:numTest
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
+hyp1.cov = [opts{tid}.cov; 0.1; 0.1];
+hyp1.lik = opts{tid}.lik;
+compositeCov = {'covSum',{@covSEard,{'covScale',{@covLIN}}, @covConst}};
+hyp1 = minimize(hyp1, @gp, 100, @infExact, [], compositeCov, @likGauss, x, y);
+[mu, s2] = gp(hyp1, @infExact, [], compositeCov, @likGauss, x, y, xtest);
+nmse_CompositefullGP(tid) = getNMSE(mu, ytest);
+plotResult(x, y, xtest, ytest, mu, s2);
+filename = strcat('synGP/figs/synGP_CompositefullGP_M', int2str(M),  '_', int2str(tid),'.pdf');
+saveas(gcf, filename, 'pdf');
+end
+
 
 %% Composite EigenGP
 seed = 1;
 rand('seed',seed); randn('seed',seed);
 for tid = 1:numTest
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
 model.logSigma = opts{tid}.lik;
 model.logEta = -opts{tid}.cov(1:D,1);
 model.logA0 = opts{tid}.cov(D+1);
-model.logA1 = opts{tid}.logA1;
-model.logA2 = opts{tid}.logA2;
+model.logA1 = 0.1;
+model.logA2 = 0.1;
 
 trained_model = EigenGPNS_train(model, x, y, M, 50);
 [mu s2] = EigenGPNS_pred(trained_model, x, y, xtest);
@@ -117,7 +132,8 @@ end
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 for tid = 1:numTest
-[nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_UI(x, y, xtest, mu_full, M, opts{tid});
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
+[nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_UI(x, y, xtest, ytest, M, opts{tid});
 nmse_kerBEigenGP(tid) = getNMSE(mu, ytest);
 plotResult(x, y, xtest, ytest, mu, s2, post.opt.B);
 filename = strcat('synGP/figs/synGP_kerBEigenGP_M', int2str(M),  '_', int2str(tid),'.pdf');
@@ -128,6 +144,7 @@ end
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 for tid =1:numTest
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
 hyp_init(1:D,1) = opts{tid}.cov(1:D,1); % log 1/(lengthscales)^2
 hyp_init(D+1,1) = opts{tid}.cov(D+1); % log size 
 hyp_init(D+2,1) = opts{tid}.lik; % log noise
@@ -156,10 +173,11 @@ end
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 for tid = 1:numTest
+load(strcat('synGP/synGP_', int2str(tid), '.mat'));
 hyp_init(1:D,1) = opts{tid}.cov(1:D,1); % log 1/(lengthscales)^2
 hyp_init(D+1,1) = opts{tid}.cov(D+1); % log size 
 hyp_init(D+2,1) = opts{tid}.lik; % log noise
-[nmse, mu, s2, nmlp, newloghyper, convergence] = ssgpr_ui(x, y, xtest, mu_full, M, 1000, hyp_init);
+[nmse, mu, s2, nmlp, newloghyper, convergence] = ssgpr_ui(x, y, xtest, ytest, M, 1000, hyp_init);
 
 nmse_ssgpr(tid) = getNMSE(mu, ytest);
 plotResult(x, y, xtest, ytest, mu, s2);
@@ -168,6 +186,8 @@ saveas(gcf, filename, 'pdf');
 end
 
 %% print result
+fprintf('ARD fullGP: %f +- %f\n', mean(nmse_ARDfullGP), std(nmse_ARDfullGP)/sqrt(numTest));
+fprintf('Composite fullGP: %f +- %f\n', mean(nmse_CompositefullGP), std(nmse_CompositefullGP)/sqrt(numTest));
 fprintf('composite EigenGP: %f +- %f\n', mean(nmse_compositeEigenGP), std(nmse_compositeEigenGP)/sqrt(numTest));
 fprintf('kerB EigenGP: %f +- %f\n', mean(nmse_kerBEigenGP), std(nmse_kerBEigenGP)/sqrt(numTest));
 fprintf('FITC: %f +- %f\n', mean(nmse_fitc), std(nmse_fitc)/sqrt(numTest));
@@ -175,6 +195,7 @@ fprintf('SSGPR: %f +- %f\n', mean(nmse_ssgpr), std(nmse_ssgpr)/sqrt(numTest));
 end
 
 function plotResult(x, y, xs, ys, mu, s2, B)
+global MAX_X
 clf
 hold on
 plot(x,y,'.m', 'MarkerSize', 12)% data points in magenta
@@ -187,7 +208,7 @@ if nargin > 6
     plot(B,-1.9*ones(size(B)),'k+','markersize',20)
 end
 hold off
-axis([0 5 -2 2.5]);
+axis([0 MAX_X -2 2]);
 xlabel('x', 'fontsize', 20);
 ylabel('y', 'fontsize', 20);
 set(gca, 'fontsize',20);
@@ -196,6 +217,7 @@ set(gcf, 'PaperPositionMode', 'auto')
 end
 
 function plotCompositeEigenFunctions(model, xtest)
+global MAX_X;
 sigma2 = exp(model.logSigma*2);
 eta = exp(model.logEta);
 a0 = exp(model.logA0);
@@ -224,14 +246,19 @@ clf
 hold on 
 %plot(xtest, mu, '-.b');
 %plot(xtest, mu_full, '--r');
-plot(xtest, Kerfun(:,1), '-.', 'Color', [0.54118,0.18039,0.90196]);
-plot(xtest, Kerfun(:,2), '--', 'Color', [0.18039,0.90196,0.90196]);
-plot(xtest, Kerfun(:,3), '-', 'Color', [0,0.90196,0]);
-plot(xtest, Kerfun(:,4), '-', 'Color', [0.8,0.6,0.1]); %plot(xtest, Kerfun(:,5), '-', 'Color', [0.18039,0.90196,0.36078]);
-plot(xtest, Kerfun(:,5), '-', 'Color', [0.90196,0.18039,0.18039]);
+plot(xtest, Kerfun(:,1), '-.', 'Color', [0.18039,0.3098,0.90196]);
+plot(xtest, Kerfun(:,2), '--', 'Color', [0.18039,0.56078,0.90196]);
+plot(xtest, Kerfun(:,3), '-', 'Color', [0.18039,0.81176,0.90196]);
+plot(xtest, Kerfun(:,4), '-', 'Color', [0.18039,0.90196,0.74118]); %plot(xtest, Kerfun(:,5), '-', 'Color', [0.18039,0.90196,0.36078]);
+plot(xtest, Kerfun(:,5), '-', 'Color', [0.18039,0.90196,0.4902]);
+plot(xtest, Kerfun(:,6), '-.', 'Color', [0.18039,0.90196,0.23922]);
+plot(xtest, Kerfun(:,7), '--', 'Color', [0.36863,0.90196,0.18039]);
+plot(xtest, Kerfun(:,8), '-', 'Color', [0.61961,0.90196,0.18039]);
+plot(xtest, Kerfun(:,9), '-', 'Color', [0.90196,0.43137,0.18039]); %plot(xtest, Kerfun(:,5), '-', 'Color', [0.18039,0.90196,0.36078]);
+plot(xtest, Kerfun(:,10), '-', 'Color', [0.90196,0.18039,0.18039]);
 plot(B,-1.9*ones(size(B)),'k+','markersize',20);
 hold off
-axis([0 5 -2 2.5]);
+axis([0 MAX_X -3 3]);
 xlabel('x', 'fontsize', 20);
 ylabel('y', 'fontsize', 20);
 % lg = legend( 'predictive mean', ...
