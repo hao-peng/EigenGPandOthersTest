@@ -2,7 +2,7 @@
 % The input (x) is the time
 % The ouput (y) is the value.
 % M - number of basis
-function testGPCF(M)
+function testGPCF_G(M)
 addpath('ARDEigenGP');
 addpath('CompositeEigenGP');
 addpath('GPML');
@@ -12,7 +12,7 @@ addpath('SPGP_dist');
 addpath('ssgpr_code');
 mkdir('synGP/figs2');
 
-GENERATE_DATA = true;
+GENERATE_DATA = false;
 TEST_FULL = true; % whether to test full
 
 %% initialize arguments if they are not assigned.
@@ -91,7 +91,7 @@ if TEST_FULL
         for tid = 1:ns
             xtest = all_x(n+tid,:);
             ytest = all_y(n+tid);
-            hyp1 = minimize(hyp1, @gp, 10, @infExact, [], {@covSEard}, @likGauss, x, y);
+            %hyp1 = minimize(hyp1, @gp, 0, @infExact, [], {@covSEard}, @likGauss, x, y);
             [mu, s2] = gp(hyp1, @infExact, [], {@covSEard}, @likGauss, x, y, xtest);
             pred_mu(tid) = mu;
             pred_s2(tid) = s2;
@@ -131,7 +131,7 @@ for cid = 1:numTest
         if tid ~= 1
             trained_model = rmfield(trained_model, 'B');
         end
-        trained_model = EigenGPNS_train(trained_model, x, y, M, 20);
+        trained_model = EigenGPNS_trainB(trained_model, x, y, M, 20);
         [mu s2] = EigenGPNS_pred(trained_model, x, y, xtest);
         pred_mu(tid) = mu;
         pred_s2(tid) = s2;
@@ -166,7 +166,7 @@ for cid = 1:numTest
     opt.cov(2) = log(var(y,1)); % log size 
     opt.lik = log(var(y,1)/4); % log noise
     opt.nIter = 100;
-    [nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_UI(x, y, xtest, ytest, M, opt);
+    [nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_B_UI(x, y, xtest, ytest, M, opt);
     post.opt.nIter = 20;
     for tid = 1:ns
         xtest = all_x(n+tid,:);
@@ -174,7 +174,7 @@ for cid = 1:numTest
         if tid ~= 1
             post.opt = rmfield(post.opt, 'B');
         end
-        [nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_UI(x, y, xtest, ytest, M, post.opt);
+        [nmse, mu, s2, nmlp, post] = EigenGP_Upd_kerB_B_UI(x, y, xtest, ytest, M, post.opt);
         pred_mu(tid) = mu;
         pred_s2(tid) = s2;
         nses_kerB(tid) = (mu-ytest)^2/(mean(y)-ytest)^2;
@@ -187,84 +187,6 @@ for cid = 1:numTest
     saveas(gcf, filename, 'pdf');
 end
 
-%% FITC
-seed = 1;
-rand('seed',seed); randn('seed',seed);
-
-for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
-    N = size(x, 1);
-    [all_x IND] = sort(x);
-    all_y = y(IND);
-    x = all_x(1:n,:);
-    y = all_y(1:n);
-
-    hyp_init(1,1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
-    hyp_init(2,1) = log(var(y,1)); % log size 
-    hyp_init(3,1) = log(var(y,1)/4); % log noise
-    % random initialize pseudo-inputs
-    [dum,I] = sort(rand(n,1)); clear dum;
-    I = I(1:M);
-    xb_init = x(I,:);
-    w_init = [reshape(xb_init,M,1);hyp_init];
-    % optimization
-    [w,f] = minimize(w_init,'spgp_lik',-100,y,x,M);
-    for tid = 1:ns
-        xtest = all_x(n+tid,:);
-        ytest = all_y(n+tid);
-        if tid ~= 1
-            [dum,I] = sort(rand(size(x,1),1));
-            w(1:M,1) = x(I(1:M),:);
-        end
-        [w,f] = minimize(w,'spgp_lik',-20,y,x,M);
-        xb = reshape(w(1:M,1),M,1);
-        hyp = w(M+1:end,1);
-        % PREDICTION
-        [mu,s2] = spgp_pred(y,x,xb,xtest,hyp);
-        pred_mu(tid) = mu;
-        pred_s2(tid) = s2;
-        nses_fitc(tid) = (mu-ytest)^2/(mean(y)-ytest)^2;
-        x = [x; xtest];
-        y = [y; ytest];
-    end
-    nmses_fitc(cid) = mean(nses_fitc);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2, xb);
-    filename = strcat('synGP/figs2/synGP_fitc_M', int2str(M), '_', int2str(cid), '.pdf');
-    saveas(gcf, filename, 'pdf');
-end
-%% SSGPR
-seed = 1;
-rand('seed',seed); randn('seed',seed);
-
-for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
-    N = size(x, 1);
-    [all_x IND] = sort(x);
-    all_y = y(IND);
-    x = all_x(1:n,:);
-    y = all_y(1:n);
-    xtest = all_x(n+1,:);
-    ytest = all_y(n+1);
-    hyp_init(1,1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
-    hyp_init(2,1) = log(var(y,1)); % log size 
-    hyp_init(3,1) = log(var(y,1)/4); % log noise
-    [nmse, mu, s2, nmlp, newhyp, convergence] = ssgpr_ui(x, y, xtest, ytest, M, 100, hyp_init);
-    for tid = 1:ns
-        xtest = all_x(n+tid,:);
-        ytest = all_y(n+tid);
-        [nmse, mu, s2, nmlp, newhyp, convergence] = ssgpr_ui(x, y, xtest, ytest, M, 20, newhyp);
-        pred_mu(tid) = mu;
-        pred_s2(tid) = s2;
-        nses_ssgpr(tid) = (mu-ytest)^2/(mean(y)-ytest)^2;
-        x = [x; xtest];
-        y = [y; ytest];
-    end
-    nmses_ssgpr(cid) = mean(nses_ssgpr);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2);
-    filename = strcat('synGP/figs2/synGP_ssgpr_M', int2str(M), '_', int2str(cid), '.pdf');
-    saveas(gcf, filename, 'pdf');
-end
-
 %% print result
 
 save('tmpResult.mat');
@@ -273,8 +195,6 @@ if TEST_FULL
 end
 fprintf('composite EigenGP: %f +- %f\n', mean(nmses_compositeEigenGP), std(nmses_compositeEigenGP)/sqrt(numTest));
 fprintf('kerB EigenGP: %f +- %f\n', mean(nmses_kerB), std(nmses_kerB)/sqrt(numTest));
-fprintf('FITC: %f +- %f\n', mean(nmses_fitc), std(nmses_fitc)/sqrt(numTest));
-fprintf('SSGPR: %f +- %f\n', mean(nmses_ssgpr), std(nmses_ssgpr)/sqrt(numTest));
 
 end
 
