@@ -252,6 +252,7 @@ end
 function plotResult(raw_x, raw_y, xs, mu, s2, B) 
 clf
 hold on
+set(gcf,'defaultlinelinewidth',1.5);
 plot(raw_x,raw_y,'.m', 'MarkerSize', 5)% data points in magenta
 %plot(xs, syn1(xs), '-', 'Color', [0 .5 0]);
 plot(xs, mu,'b') % mean predictions in blue

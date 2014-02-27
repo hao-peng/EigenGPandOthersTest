@@ -22,7 +22,7 @@ set(gcf,'defaultlinelinewidth',1.5);
 mkdir('synGP/figs');
 GENERATE_DATA = true;
 global MAX_X;
-MAX_X = 5;
+MAX_X = 10;
 %% number of pseudo-inputs
 M = 10;
 
@@ -30,7 +30,7 @@ M = 10;
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 
-N = 200;
+N = 300;
 Ns = 500;
 D = 1;
 % a0 = alpha*x+0.1
@@ -39,7 +39,7 @@ alpha = 0.1;
 beta = 0.1;
 sigma = 0.1;
 
-numTest = 10;
+numTest = 5;
 
 
 if GENERATE_DATA
@@ -205,10 +205,10 @@ plot(xs,mu+2*sqrt(s2),'r') % plus/minus 2 std deviation predictions in red
 plot(xs,mu-2*sqrt(s2),'r')
 % x-location of pseudo-inputs as black crosses
 if nargin > 6
-    plot(B,-1.9*ones(size(B)),'k+','markersize',20)
+    plot(B,(min(ys)-1)*ones(size(B)),'k+','markersize',20)
 end
 hold off
-axis([0 MAX_X -2 2]);
+axis([0 MAX_X -6 4]);
 xlabel('x', 'fontsize', 20);
 ylabel('y', 'fontsize', 20);
 set(gca, 'fontsize',20);

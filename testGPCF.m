@@ -21,7 +21,7 @@ if ~exist('M', 'var')
 end
 
 global MAX_X;
-MAX_X = 15;
+MAX_X = 10;
 %% number of pseudo-inputs
 M = 10;
 
@@ -29,7 +29,7 @@ M = 10;
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 
-N = 200;
+N = 300;
 Ns = 500;
 D = 1;
 % a0 = alpha*x+0.1
@@ -59,11 +59,11 @@ x = all_x(1:N, 1);
 y = all_y(1:N, 1) + normrnd(0, sigma, N, 1);
 
 
-[xtest iX] = sort(all_x(N+1:end,1));
-ytest = all_y(N+1:end,1);
-ytest = ytest(iX);
+[txtest iX] = sort(all_x(N+1:end,1));
+tytest = all_y(N+1:end,1);
+tytest = tytest(iX);
 
-save(strcat('synGP/synGP_', int2str(cid),'.mat'), 'x', 'y','xtest','ytest');
+save(strcat('synGP/synGPCF_', int2str(cid),'.mat'), 'x', 'y','txtest','tytest');
 end
 end
 
@@ -75,7 +75,7 @@ if TEST_FULL
     seed = 0;
     rand('seed',seed); randn('seed',seed);
     for cid = 1:numTest
-        load(strcat('synGP/synGP_',int2str(cid),'.mat'));
+        load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
         N = size(x, 1);
         [all_x IND] = sort(x);
         all_y = y(IND);
@@ -100,7 +100,7 @@ if TEST_FULL
             y = [y; ytest];
         end
         nmses_full(cid) = mean(nses_full);
-        plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2);
+        plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2);
         filename = strcat('synGP/figs2/synGP_full_',int2str(cid),'.pdf');
         saveas(gcf, filename, 'pdf');
     end
@@ -111,7 +111,7 @@ seed = 0;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
+    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
     N = size(x, 1);
     [all_x IND] = sort(x);
     all_y = y(IND);
@@ -143,7 +143,7 @@ for cid = 1:numTest
     end
 
     nmses_compositeEigenGP(cid) = mean(nses_compositeEigenGP);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2, trained_model.B);
+    plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, trained_model.B);
     filename = strcat('synGP/figs2/synGP_compositeEigenGP_M', int2str(M), '_', int2str(cid),'.pdf');
     saveas(gcf, filename, 'pdf');
 end
@@ -153,7 +153,7 @@ seed = 0;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
+    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
     N = size(x, 1);
     [all_x IND] = sort(x);
     all_y = y(IND);
@@ -182,7 +182,7 @@ for cid = 1:numTest
         y = [y; ytest];
     end
     nmses_kerB(cid) = mean(nses_kerB);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
+    plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
     filename = strcat('synGP/figs2/synGP_kerB_M', int2str(M),'_',int2str(cid),'.pdf');
     saveas(gcf, filename, 'pdf');
 end
@@ -192,7 +192,7 @@ seed = 1;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
+    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
     N = size(x, 1);
     [all_x IND] = sort(x);
     all_y = y(IND);
@@ -228,7 +228,7 @@ for cid = 1:numTest
         y = [y; ytest];
     end
     nmses_fitc(cid) = mean(nses_fitc);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2, xb);
+    plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, xb);
     filename = strcat('synGP/figs2/synGP_fitc_M', int2str(M), '_', int2str(cid), '.pdf');
     saveas(gcf, filename, 'pdf');
 end
@@ -237,7 +237,7 @@ seed = 1;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGP_',int2str(cid),'.mat'));
+    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
     N = size(x, 1);
     [all_x IND] = sort(x);
     all_y = y(IND);
@@ -260,7 +260,7 @@ for cid = 1:numTest
         y = [y; ytest];
     end
     nmses_ssgpr(cid) = mean(nses_ssgpr);
-    plotResult(x, y, xtest, ytest, x(1+n:n+ns), pred_mu, pred_s2);
+    plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2);
     filename = strcat('synGP/figs2/synGP_ssgpr_M', int2str(M), '_', int2str(cid), '.pdf');
     saveas(gcf, filename, 'pdf');
 end
@@ -281,13 +281,15 @@ end
 function plotResult(x, y, xtest, ytest, xs, mu, s2, B) 
 clf
 hold on
-plot(x,y,'.m', 'MarkerSize', 5)% data points in magenta
+set(gcf,'defaultlinelinewidth',1.5);
+axis([0 10, -6 4]);
+plot(x,y,'.m', 'MarkerSize', 10)% data points in magenta
 plot(xtest, ytest, '-', 'Color', [0 .5 0]);
 plot(xs, mu,'b') % mean predictions in blue
 plot(xs,mu+2*sqrt(s2),'r') % plus/minus 2 std deviation predictions in red
 plot(xs,mu-2*sqrt(s2),'r')
 if nargin > 7
-    plot(B,-0.4*ones(size(B)),'k+','markersize',20)
+    plot(B,(min(ytest)-1)*ones(size(B)),'k+','markersize',20)
 end
 hold off
 %axis([0 5 -0.5 1]);
