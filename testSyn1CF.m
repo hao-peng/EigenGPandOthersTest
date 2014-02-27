@@ -172,7 +172,7 @@ end
 hyp_init(2,1) = log(var(y,1)); % log size 
 hyp_init(3,1) = log(var(y,1)/4); % log noise
 % random initialize pseudo-inputs
-[dum,I] = sort(rand(n,1)); clear dum;
+[dum,I] = sort(rand(n,1));
 I = I(1:M);
 xb_init = x(I,:);
 w_init = [reshape(xb_init,M,1);hyp_init];
@@ -181,6 +181,10 @@ w_init = [reshape(xb_init,M,1);hyp_init];
 for tid = 1:ns
     xtest = all_x(n+tid,:);
     ytest = all_y(n+tid);
+    if tid ~= 1
+        [dum,I] = sort(rand(size(x,1),1));
+        w(1:M,1) = x(I(1:M),:);
+    end
     [w,f] = minimize(w,'spgp_lik',-20,y,x,M);
     xb = reshape(w(1:M,1),M,1);
     hyp = w(M+1:end,1);
