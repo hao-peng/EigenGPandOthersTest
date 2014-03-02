@@ -16,25 +16,27 @@ TEST_FULL = true; % whether to test full
 
 %% initialize arguments if they are not assigned.
 if ~exist('M', 'var')
-    M = 15;
+    M = 20;
 end
 
 %% number of pseudo-inputs
-N = 300;
+seed = 0;
+rand('seed',seed); randn('seed',seed);
+N = 200;
 Ns = 500;
 D = 1;
-numTest=10;
+numTest=5;
 for ind = 1:numTest
-x = linspace(0,3,N)';
+x = linspace(0,2.5,N)';
 %x = rand(N,1)*3;
 %x = rand(N,1)*2*pi;
 y = x.*sin(x.^3) + randn(N, 1)*0.5;
 %y = sin(2*pi*2*x);
 %y(x < pi) = sin(2*pi*x(x<pi));
-txtest = linspace(0, 3, Ns)';
+txtest = linspace(0, 2.5, Ns)';
 %xtest = linspace(0, 2*pi, Ns)';
-tytest = xtest.*sin(xtest.^3);
-save(strcat('syn2/syn2CF_', int2str(ind), '.mat'), 'x', 'y', 'xtest', 'ytest');
+tytest = txtest.*sin(txtest.^3);
+save(strcat('syn2/syn2CF_', int2str(ind), '.mat'), 'x', 'y', 'txtest', 'tytest');
 end
 
 n = 50;
@@ -53,7 +55,7 @@ if TEST_FULL
         y = all_y(1:n);
         xtest = all_x(n+1,:);
         ytest = all_y(n+1);
-        opt.cov(1) = -2*log((max(x)-min(x))'/2); % log 1/(lengthscales)^2
+        opt.cov(1) = -2*log((max(x)-min(x))'*10); % log 1/(lengthscales)^2
         opt.cov(2) = log(var(y,1)); % log size 
         opt.lik = log(var(y,1)/4); % log noise
 
@@ -89,7 +91,7 @@ for cid = 1:numTest
     x = all_x(1:n,:);
     y = all_y(1:n);
     model.logSigma = log(var(y,1));
-    model.logEta = log((max(x)-min(x))')/2; %log eta
+    model.logEta = 2*log((max(x)-min(x))'*20); %log eta
     model.logA0 = log(var(y,1)/4);
     model.logA1 = 0.1;
     model.logA2 = 0.1;
@@ -137,7 +139,7 @@ for cid = 1:numTest
     xtest = all_x(n+1,:);
     ytest = all_y(n+1);
 
-    opt.cov(1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    opt.cov(1) = -2*log((max(x)-min(x))'*10); % log 1/(lengthscales)^2
     opt.cov(2) = log(var(y,1)); % log size 
     opt.lik = log(var(y,1)/4); % log noise
     opt.nIter = 100;
@@ -181,7 +183,7 @@ for cid = 1:numTest
     xtest = all_x(n+1,:);
     ytest = all_y(n+1);
 
-    opt.cov(1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    opt.cov(1) = -2*log((max(x)-min(x))'*13); % log 1/(lengthscales)^2
     opt.cov(2) = log(var(y,1)); % log size 
     opt.lik = log(var(y,1)/4); % log noise
     opt.nIter = 100;
@@ -226,7 +228,7 @@ for cid = 1:numTest
     xtest = all_x(n+1,:);
     ytest = all_y(n+1);
 
-    opt.cov(1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    opt.cov(1) = -2*log((max(x)-min(x))'*10); % log 1/(lengthscales)^2
     opt.cov(2) = log(var(y,1)); % log size 
     opt.lik = log(var(y,1)/4); % log noise
     opt.nIter = 100;
@@ -266,7 +268,7 @@ for cid = 1:numTest
     x = all_x(1:n,:);
     y = all_y(1:n);
 
-    hyp_init(1,1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    hyp_init(1,1) = -14*log((max(x)-min(x))'); % log 1/(lengthscales)^2
     hyp_init(2,1) = log(var(y,1)); % log size 
     hyp_init(3,1) = log(var(y,1)/4); % log noise
     % random initialize pseudo-inputs
@@ -283,7 +285,7 @@ for cid = 1:numTest
             [dum,I] = sort(rand(size(x,1),1));
             w(1:M,1) = x(I(1:M),:);
         end
-        [w,f] = minimize(w,'spgp_lik',-20,y,x,M);
+        [w,f] = minimize(w,'spgp_lik',-210,y,x,M);
         xb = reshape(w(1:M,1),M,1);
         hyp = w(M+1:end,1);
         % PREDICTION
@@ -314,7 +316,7 @@ for cid = 1:numTest
     y = all_y(1:n);
     xtest = all_x(n+1,:);
     ytest = all_y(n+1);
-    hyp_init(1,1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    hyp_init(1,1) = -2*log((max(x)-min(x))'*10); % log 1/(lengthscales)^2
     hyp_init(2,1) = log(var(y,1)); % log size 
     hyp_init(3,1) = log(var(y,1)/4); % log noise
     [nmse, mu, s2, nmlp, newhyp, convergence] = ssgpr_ui(x, y, xtest, ytest, M, 100, hyp_init);
@@ -353,7 +355,7 @@ function plotResult(x, y, xtest, ytest, xs, mu, s2, B)
 clf
 hold on
 set(gcf,'defaultlinelinewidth',1.5);
-axis([0 3, -3 3]);
+axis([0 2.5, -3 3]);
 plot(x,y,'.m', 'MarkerSize', 10)% data points in magenta
 plot(xtest, ytest, '-', 'Color', [0 .5 0]);
 plot(xs, mu,'b') % mean predictions in blue
