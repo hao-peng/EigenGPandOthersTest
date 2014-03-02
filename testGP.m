@@ -20,9 +20,9 @@ addpath('ssgpr_code');
 set(gcf,'defaultlinelinewidth',1.5);
 
 mkdir('synGP/figs');
-GENERATE_DATA = true;
+GENERATE_DATA = false;
 global MAX_X;
-MAX_X = 10;
+MAX_X = 5;
 %% number of pseudo-inputs
 M = 10;
 
@@ -30,7 +30,7 @@ M = 10;
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 
-N = 300;
+N = 200;
 Ns = 500;
 D = 1;
 % a0 = alpha*x+0.1
@@ -39,7 +39,7 @@ alpha = 0.1;
 beta = 0.1;
 sigma = 0.1;
 
-numTest = 5;
+numTest = 10;
 
 
 if GENERATE_DATA
@@ -128,7 +128,7 @@ filename = strcat('synGP/figs/synGP_Eigen_CompositeEigenGP_M', int2str(M),  '_',
 saveas(gcf, filename, 'pdf');
 end
 
-%% ARD update kerB
+%% ARD update kerB and W
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 for tid = 1:numTest
@@ -137,6 +137,14 @@ load(strcat('synGP/synGP_', int2str(tid), '.mat'));
 nmse_kerBEigenGP(tid) = getNMSE(mu, ytest);
 plotResult(x, y, xtest, ytest, mu, s2, post.opt.B);
 filename = strcat('synGP/figs/synGP_kerBEigenGP_M', int2str(M),  '_', int2str(tid),'.pdf');
+saveas(gcf, filename, 'pdf');
+
+
+post.opt.nIter = 10;
+[nmse, mu, s2, nmlp, post] = EigenGP_Upd_W_UI(x, y, xtest, ytest, M, post.opt);
+nmse_seqEigenGP(tid) = getNMSE(mu, ytest);
+plotResult(x, y, xtest, ytest, mu, s2, post.opt.B);
+filename = strcat('synGP/figs/synGP_seqEigenGP_M', int2str(M),  '_', int2str(tid),'.pdf');
 saveas(gcf, filename, 'pdf');
 end
 
@@ -190,6 +198,7 @@ fprintf('ARD fullGP: %f +- %f\n', mean(nmse_ARDfullGP), std(nmse_ARDfullGP)/sqrt
 fprintf('Composite fullGP: %f +- %f\n', mean(nmse_CompositefullGP), std(nmse_CompositefullGP)/sqrt(numTest));
 fprintf('composite EigenGP: %f +- %f\n', mean(nmse_compositeEigenGP), std(nmse_compositeEigenGP)/sqrt(numTest));
 fprintf('kerB EigenGP: %f +- %f\n', mean(nmse_kerBEigenGP), std(nmse_kerBEigenGP)/sqrt(numTest));
+fprintf('seq EigenGP: %f +- %f\n', mean(nmse_seqEigenGP), std(nmse_seqEigenGP)/sqrt(numTest));
 fprintf('FITC: %f +- %f\n', mean(nmse_fitc), std(nmse_fitc)/sqrt(numTest));
 fprintf('SSGPR: %f +- %f\n', mean(nmse_ssgpr), std(nmse_ssgpr)/sqrt(numTest));
 end
@@ -208,7 +217,7 @@ if nargin > 6
     plot(B,(min(ys)-1)*ones(size(B)),'k+','markersize',20)
 end
 hold off
-axis([0 MAX_X -6 4]);
+axis([0 MAX_X -3 3]);
 xlabel('x', 'fontsize', 20);
 ylabel('y', 'fontsize', 20);
 set(gca, 'fontsize',20);

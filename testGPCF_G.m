@@ -29,7 +29,7 @@ M = 10;
 seed = 0;
 rand('seed',seed); randn('seed',seed);
 
-N = 300;
+N = 200;
 Ns = 500;
 D = 1;
 % a0 = alpha*x+0.1
@@ -38,7 +38,7 @@ alpha = 0.1;
 beta = 0.1;
 sigma = 0.1;
 
-numTest = 5;
+numTest = 10;
 
 
 if GENERATE_DATA

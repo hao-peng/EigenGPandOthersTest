@@ -34,7 +34,7 @@ if nargin < 6; del = 1e-6; end % default jitter
 sig = exp(hyp(end)); % noise variance
 
 % precomputations
-tic;
+%tic;
 K = kern(xb,xb,hyp) + del*eye(n);
 L = chol(K)';
 K = kern(xb,x,hyp);
@@ -44,10 +44,10 @@ V = V./repmat(sqrt(ep)',n,1); y = y./sqrt(ep);
 Lm = chol(sig*eye(n) + V*V')';
 bet = Lm\(V*y);
 clear V
-t_train = toc;
+%t_train = toc;
 
 % test predictions
-tic;
+%tic;
 K = kern(xb,xt,hyp);
 lst = L\K;
 clear K
@@ -55,7 +55,7 @@ lmst = Lm\lst;
 mu = (bet'*lmst)';
 
 s2 = kdiag(xt,hyp) - sum(lst.^2,1)' + sig*sum(lmst.^2,1)';
-t_test = toc;
+%t_test = toc;
 
 
 % OPTIONAL posterior mean pseudo targets

@@ -10,61 +10,31 @@ startup;
 addpath('lightspeed');
 addpath('SPGP_dist');
 addpath('ssgpr_code');
-mkdir('synGP/figs2');
+mkdir('syn2/figs2');
 
-GENERATE_DATA = true;
 TEST_FULL = true; % whether to test full
 
 %% initialize arguments if they are not assigned.
 if ~exist('M', 'var')
-    M = 10;
+    M = 15;
 end
 
-global MAX_X;
-MAX_X = 5;
 %% number of pseudo-inputs
-M = 10;
-
-%% generate data
-seed = 0;
-rand('seed',seed); randn('seed',seed);
-
-N = 200;
+N = 300;
 Ns = 500;
 D = 1;
-% a0 = alpha*x+0.1
-% 1/eta = beta*x
-alpha = 0.1;
-beta = 0.1;
-sigma = 0.1;
-
-numTest = 10;
-
-
-if GENERATE_DATA
-for cid = 1:numTest
-% generating
-all_x = rand(N+Ns, 1)*MAX_X;
-
-C = zeros(N+Ns);
-for i = 1:N+Ns
-    for j = 1:N+Ns
-        C(i,j) = (alpha*(all_x(i)+all_x(j))+0.1)*(beta*all_x(i))^0.25*(beta*all_x(j))^0.25*(beta*(all_x(i)+all_x(j))/2)^-0.5...
-            *exp(-(all_x(i)-all_x(j))^2/(beta*(all_x(i)+all_x(j))/2));
-    end
-end
-all_y = mvnrnd(zeros(N+Ns,1), C)';
-
-x = all_x(1:N, 1);
-y = all_y(1:N, 1) + normrnd(0, sigma, N, 1);
-
-
-[txtest iX] = sort(all_x(N+1:end,1));
-tytest = all_y(N+1:end,1);
-tytest = tytest(iX);
-
-save(strcat('synGP/synGPCF_', int2str(cid),'.mat'), 'x', 'y','txtest','tytest');
-end
+numTest=10;
+for ind = 1:numTest
+x = linspace(0,3,N)';
+%x = rand(N,1)*3;
+%x = rand(N,1)*2*pi;
+y = x.*sin(x.^3) + randn(N, 1)*0.5;
+%y = sin(2*pi*2*x);
+%y(x < pi) = sin(2*pi*x(x<pi));
+txtest = linspace(0, 3, Ns)';
+%xtest = linspace(0, 2*pi, Ns)';
+tytest = xtest.*sin(xtest.^3);
+save(strcat('syn2/syn2CF_', int2str(ind), '.mat'), 'x', 'y', 'xtest', 'ytest');
 end
 
 n = 50;
@@ -75,7 +45,7 @@ if TEST_FULL
     seed = 0;
     rand('seed',seed); randn('seed',seed);
     for cid = 1:numTest
-        load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+        load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
         N = size(x, 1);
         [all_x IND] = sort(x);
         all_y = y(IND);
@@ -101,7 +71,7 @@ if TEST_FULL
         end
         nmses_full(cid) = mean(nses_full);
         plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2);
-        filename = strcat('synGP/figs2/synGP_full_',int2str(cid),'.pdf');
+        filename = strcat('syn2/figs2/syn2_full_',int2str(cid),'.pdf');
         saveas(gcf, filename, 'pdf');
     end
 end
@@ -111,7 +81,7 @@ seed = 0;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
     tic;
     N = size(x, 1);
     [all_x IND] = sort(x);
@@ -147,7 +117,7 @@ for cid = 1:numTest
 
     nmses_compositeEigenGP(cid) = mean(nses_compositeEigenGP);
     plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, trained_model.B);
-    filename = strcat('synGP/figs2/synGP_compositeEigenGP_M', int2str(M), '_', int2str(cid),'.pdf');
+    filename = strcat('syn2/figs2/syn2_compositeEigenGP_M', int2str(M), '_', int2str(cid),'.pdf');
     saveas(gcf, filename, 'pdf');
 end
 
@@ -156,7 +126,7 @@ seed = 0;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
     
     tic;
     N = size(x, 1);
@@ -190,7 +160,7 @@ for cid = 1:numTest
     times_kerB(cid) = toc;
     nmses_kerB(cid) = mean(nses_kerB);
     plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
-    filename = strcat('synGP/figs2/synGP_kerB_M', int2str(M),'_',int2str(cid),'.pdf');
+    filename = strcat('syn2/figs2/syn2_kerB_M', int2str(M),'_',int2str(cid),'.pdf');
     saveas(gcf, filename, 'pdf');
 end
 
@@ -200,7 +170,7 @@ seed = 0;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
     
     tic;
     N = size(x, 1);
@@ -236,7 +206,50 @@ for cid = 1:numTest
     times_seq(cid) = toc;
     nmses_seq(cid) = mean(nses_seq);
     plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
-    filename = strcat('synGP/figs2/synGP_seq_M', int2str(M),'_',int2str(cid),'.pdf');
+    filename = strcat('syn2/figs2/syn2_seq_M', int2str(M),'_',int2str(cid),'.pdf');
+    saveas(gcf, filename, 'pdf');
+end
+
+%% Nystrom
+seed = 0;
+rand('seed',seed); randn('seed',seed);
+
+for cid = 1:numTest
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
+    
+    tic;
+    N = size(x, 1);
+    [all_x IND] = sort(x);
+    all_y = y(IND);
+    x = all_x(1:n,:);
+    y = all_y(1:n);
+    xtest = all_x(n+1,:);
+    ytest = all_y(n+1);
+
+    opt.cov(1) = -2*log((max(x)-min(x))'); % log 1/(lengthscales)^2
+    opt.cov(2) = log(var(y,1)); % log size 
+    opt.lik = log(var(y,1)/4); % log noise
+    opt.nIter = 100;
+    [nmse, mu, s2, nmlp, post] = Nystrom_gradient_UI(x, y, xtest, ytest, M, opt);
+    post.opt.nIter = 20;
+    for tid = 1:ns
+        xtest = all_x(n+tid,:);
+        ytest = all_y(n+tid);
+        if tid ~= 1
+            post.opt = rmfield(post.opt, 'B');
+        end
+        [nmse, mu, s2, nmlp, post] = Nystrom_gradient_UI(x, y, xtest, ytest, M, post.opt);
+        pred_mu(tid) = mu;
+        pred_s2(tid) = s2;
+        nses_kerB(tid) = (mu-ytest)^2/(mean(y)-ytest)^2;
+        x = [x; xtest];
+        y = [y; ytest];
+    end
+    
+    times_kerB(cid) = toc;
+    nmses_kerB(cid) = mean(nses_kerB);
+    plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
+    filename = strcat('syn2/figs2/syn2_nystrom_M', int2str(M),'_',int2str(cid),'.pdf');
     saveas(gcf, filename, 'pdf');
 end
 
@@ -245,7 +258,7 @@ seed = 1;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
     tic;
     N = size(x, 1);
     [all_x IND] = sort(x);
@@ -284,7 +297,7 @@ for cid = 1:numTest
     times_fitc(cid) = toc;
     nmses_fitc(cid) = mean(nses_fitc);
     plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2, xb);
-    filename = strcat('synGP/figs2/synGP_fitc_M', int2str(M), '_', int2str(cid), '.pdf');
+    filename = strcat('syn2/figs2/syn2_fitc_M', int2str(M), '_', int2str(cid), '.pdf');
     saveas(gcf, filename, 'pdf');
 end
 %% SSGPR
@@ -292,7 +305,7 @@ seed = 1;
 rand('seed',seed); randn('seed',seed);
 
 for cid = 1:numTest
-    load(strcat('synGP/synGPCF_',int2str(cid),'.mat'));
+    load(strcat('syn2/syn2CF_',int2str(cid),'.mat'));
     tic;
     N = size(x, 1);
     [all_x IND] = sort(x);
@@ -318,7 +331,7 @@ for cid = 1:numTest
     times_ssgpr(tid) = toc;
     nmses_ssgpr(cid) = mean(nses_ssgpr);
     plotResult(x, y, txtest, tytest, x(1+n:n+ns), pred_mu, pred_s2);
-    filename = strcat('synGP/figs2/synGP_ssgpr_M', int2str(M), '_', int2str(cid), '.pdf');
+    filename = strcat('syn2/figs2/syn2_ssgpr_M', int2str(M), '_', int2str(cid), '.pdf');
     saveas(gcf, filename, 'pdf');
 end
 
@@ -340,7 +353,7 @@ function plotResult(x, y, xtest, ytest, xs, mu, s2, B)
 clf
 hold on
 set(gcf,'defaultlinelinewidth',1.5);
-axis([0 5, -3 3]);
+axis([0 3, -3 3]);
 plot(x,y,'.m', 'MarkerSize', 10)% data points in magenta
 plot(xtest, ytest, '-', 'Color', [0 .5 0]);
 plot(xs, mu,'b') % mean predictions in blue

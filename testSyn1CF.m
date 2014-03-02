@@ -10,7 +10,7 @@ startup;
 addpath('lightspeed');
 addpath('SPGP_dist');
 addpath('ssgpr_code');
-mkdir('syn1/figs');
+mkdir('syn1/figs2');
 NORMALIZE_DATA = false; % whether to normalize data
 TEST_FULL = true; % whether to test full
 
@@ -72,7 +72,7 @@ if TEST_FULL
     end
     nmse_full = mean(nses_full);
     plotResult(x, y, x(1+n:n+ns), pred_mu, pred_s2);
-    filename = strcat('syn1/figs/syn1_full.pdf');
+    filename = strcat('syn1/figs2/syn1_full.pdf');
     saveas(gcf, filename, 'pdf');
 end
 
@@ -117,7 +117,7 @@ end
 
 nmse_compositeEigenGP = mean(nses_compositeEigenGP);
 plotResult(x, y, x(1+n:n+ns), pred_mu, pred_s2, trained_model.B);
-filename = strcat('syn1/figs/syn1_compositeEigenGP_M', int2str(M), '.pdf');
+filename = strcat('syn1/figs2/syn1_compositeEigenGP_M', int2str(M), '.pdf');
 saveas(gcf, filename, 'pdf');
 
 %% kerB EigenGP
@@ -156,7 +156,7 @@ if NORMALIZE_DATA
 end
 nmse_kerB = mean(nses_kerB);
 plotResult(x, y, x(1+n:n+ns), pred_mu, pred_s2, post.opt.B);
-filename = strcat('syn1/figs/syn1_kerB_M', int2str(M), '.pdf');
+filename = strcat('syn1/figs2/syn1_kerB_M', int2str(M), '.pdf');
 saveas(gcf, filename, 'pdf');
 
 %% FITC
@@ -202,7 +202,7 @@ if NORMALIZE_DATA
 end
 nmse_fitc = mean(nses_fitc);
 plotResult(x, y, x(1+n:n+ns), pred_mu, pred_s2, xb);
-filename = strcat('syn1/figs/syn1_fitc_M', int2str(M), '.pdf');
+filename = strcat('syn1/figs2/syn1_fitc_M', int2str(M), '.pdf');
 saveas(gcf, filename, 'pdf');
 %% SSGPR
 seed = 1;
@@ -235,7 +235,7 @@ if NORMALIZE_DATA
 end
 nmse_ssgpr = mean(nses_ssgpr);
 plotResult(x, y, x(1+n:n+ns), pred_mu, pred_s2);
-filename = strcat('syn1/figs/syn1_ssgpr_M', int2str(M), '.pdf');
+filename = strcat('syn1/figs2/syn1_ssgpr_M', int2str(M), '.pdf');
 saveas(gcf, filename, 'pdf');
 
 %% print result
